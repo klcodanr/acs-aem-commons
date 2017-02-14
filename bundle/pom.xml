@@ -308,6 +308,10 @@
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.testing.sling-mock-oak</artifactId>
         </dependency>
+        <dependency>
+    		<groupId>org.apache.servicemix.bundles</groupId>
+    		<artifactId>org.apache.servicemix.bundles.rome</artifactId>
+		</dependency>
 
         <!--  Build Dependencies -->
         <dependency>

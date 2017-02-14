@@ -60,6 +60,11 @@
                             <artifactId>acs-aem-commons-bundle-twitter</artifactId>
                             <target>/apps/acs-commons/install</target>
                         </embedded>
+                        <embedded>
+						    <groupId>org.apache.servicemix.bundles</groupId>
+						    <artifactId>org.apache.servicemix.bundles.rome</artifactId>
+						    <target>/apps/acs-commons/install</target>
+                        </embedded>
                     </embeddeds>
                     <targetURL>http://${crx.host}:${crx.port}/crx/packmgr/service.jsp</targetURL>
                 </configuration>
@@ -209,6 +214,10 @@
             <artifactId>commons-collections</artifactId>
             <version>3.2.1</version>
         </dependency>
+		<dependency>
+		    <groupId>org.apache.servicemix.bundles</groupId>
+		    <artifactId>org.apache.servicemix.bundles.rome</artifactId>
+		</dependency>
 
     </dependencies>
     <profiles>
