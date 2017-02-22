@@ -309,9 +309,10 @@
             <artifactId>org.apache.sling.testing.sling-mock-oak</artifactId>
         </dependency>
         <dependency>
-    		<groupId>org.apache.servicemix.bundles</groupId>
-    		<artifactId>org.apache.servicemix.bundles.rome</artifactId>
+		    <groupId>org.apache.servicemix.bundles</groupId>
+		    <artifactId>org.apache.servicemix.bundles.rome</artifactId>
 		</dependency>
+        
 
         <!--  Build Dependencies -->
         <dependency>
@@ -330,6 +331,11 @@
                     <groupId>javax.servlet.jsp</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+        	<groupId>org.jdom</groupId>
+        	<artifactId>jdom</artifactId>
+        	<version>1.1.3</version>
         </dependency>
     </dependencies>
 

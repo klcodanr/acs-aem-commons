@@ -27,6 +27,8 @@
         <include pattern="/etc/acs-commons/automatic-package-replication/jcr:content"/>
         <include pattern="/etc/acs-commons/bulk-workflow-manager" />
         <include pattern="/etc/acs-commons/bulk-workflow-manager/jcr:content" />
+        <include pattern="/etc/acs-commons/feed-importer"/>
+        <include pattern="/etc/acs-commons/feed-importer/jcr:content"/>
         <include pattern="/etc/acs-commons/jcr-compare(.*)?" />
         <include pattern="/etc/acs-commons/twitter-rate-limit-checker(.*)?" />
         <include pattern="/etc/acs-commons/version-replicator(.*)?" />

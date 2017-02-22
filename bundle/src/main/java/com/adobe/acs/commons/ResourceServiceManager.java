@@ -69,7 +69,7 @@ public abstract class ResourceServiceManager extends AnnotatedStandardMBean
 	}
 
 	@Activate
-	public void activate(ComponentContext context) throws LoginException {
+	protected void activate(ComponentContext context) throws LoginException {
 		log.info("activate");
 		bctx = context.getBundleContext();
 		refreshCache();
@@ -77,7 +77,7 @@ public abstract class ResourceServiceManager extends AnnotatedStandardMBean
 	}
 
 	@Deactivate
-	public void deactivate(ComponentContext context) throws LoginException {
+	protected void deactivate(ComponentContext context) throws LoginException {
 		log.info("deactivate");
 		for (String id : registeredServices.keySet()) {
 			unregisterService(id);
@@ -156,17 +156,21 @@ public abstract class ResourceServiceManager extends AnnotatedStandardMBean
 					bctx.getServiceReferences(Runnable.class.getCanonicalName(), filter),
 					bctx.getServiceReferences(EventHandler.class.getCanonicalName(), filter));
 
-			log.warn("Found {} registered services", serviceReferences.length);
-			for (ServiceReference reference : serviceReferences) {
-				try {
-					String configurationId = (String) reference.getProperty(CONFIGURATION_ID_KEY);
-					if (!configuredIds.contains(configurationId)) {
-						log.debug("Unregistering service for configuration {}", configurationId);
-						this.unregisterService(configurationId);
+			if (serviceReferences != null) {
+				log.debug("Found {} registered services", serviceReferences.length);
+				for (ServiceReference reference : serviceReferences) {
+					try {
+						String configurationId = (String) reference.getProperty(CONFIGURATION_ID_KEY);
+						if (!configuredIds.contains(configurationId)) {
+							log.debug("Unregistering service for configuration {}", configurationId);
+							this.unregisterService(configurationId);
+						}
+					} catch (Exception e) {
+						log.warn("Exception unregistering reference " + reference, e);
 					}
-				} catch (Exception e) {
-					log.warn("Exception unregistering reference " + reference, e);
 				}
+			} else {
+				log.debug("No registered services found");
 			}
 
 		} catch (InvalidSyntaxException e) {
