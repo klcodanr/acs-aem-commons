@@ -55,16 +55,16 @@ import org.osgi.service.event.EventAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sun.syndication.feed.synd.SyndCategory;
-import com.sun.syndication.feed.synd.SyndContent;
-import com.sun.syndication.feed.synd.SyndEnclosure;
-import com.sun.syndication.feed.synd.SyndEntry;
-import com.sun.syndication.feed.synd.SyndFeed;
-import com.sun.syndication.feed.synd.SyndImage;
-import com.sun.syndication.feed.synd.SyndPerson;
-import com.sun.syndication.io.FeedException;
-import com.sun.syndication.io.SyndFeedInput;
-import com.sun.syndication.io.XmlReader;
+import com.rometools.rome.feed.synd.SyndCategory;
+import com.rometools.rome.feed.synd.SyndContent;
+import com.rometools.rome.feed.synd.SyndEnclosure;
+import com.rometools.rome.feed.synd.SyndEntry;
+import com.rometools.rome.feed.synd.SyndFeed;
+import com.rometools.rome.feed.synd.SyndImage;
+import com.rometools.rome.feed.synd.SyndPerson;
+import com.rometools.rome.io.FeedException;
+import com.rometools.rome.io.SyndFeedInput;
+import com.rometools.rome.io.XmlReader;
 
 /**
  * Job for importing feed items using ROME.
@@ -85,7 +85,7 @@ public class FeedImporterJob implements Runnable {
 			put("getContributors", TYPE.LIST);
 			put("getCopyright", TYPE.STRING);
 			put("getDescription", TYPE.STRING);
-			put("getEnclosures", TYPE.STRING);
+			put("getEnclosures", TYPE.LIST);
 			put("getLink", TYPE.STRING);
 			put("getLinks", TYPE.LIST);
 			put("getPublishedDate", TYPE.DATE);
@@ -163,8 +163,7 @@ public class FeedImporterJob implements Runnable {
 		eventAdmin.postEvent(event);
 	}
 
-	@SuppressWarnings("unchecked")
-	private void importFeed(ResourceResolver resolver, FeedImportModel model, SyndFeed feed)
+	private void importFeed(ResourceResolver resolver, FeedImportModel model, SyndFeed feed, FeedImportJobResult result)
 			throws ScriptException, UnsupportedEncodingException, RepositoryException, IOException {
 		log.trace("importFeed");
 
@@ -185,11 +184,12 @@ public class FeedImporterJob implements Runnable {
 			InputStream is = null;
 			try {
 				formatter = new Formatter(sb);
-				formatter.format(model.getNameFormat(), entry.getPublishedDate(), entry.getTitle());
 
 				log.debug("Formatting name {} with date {} and title {}",
 						new Object[] { model.getNameFormat(), entry.getPublishedDate(), entry.getTitle() });
+				formatter.format(model.getNameFormat(), entry.getPublishedDate(), entry.getTitle());
 				String name = sb.toString().toLowerCase().replaceAll("[^\\w\\d_]+", "-");
+				log.debug("Formatted name: {}", name);
 
 				if (parent.getChild(name) == null) {
 					log.debug("Creating feed entry with name {}", name);
@@ -204,12 +204,12 @@ public class FeedImporterJob implements Runnable {
 					log.trace("Generated Content JSON: {}", json);
 
 					final List<Modification> changes = new ArrayList<Modification>();
-					contentImporter.importContent(parent.adaptTo(Node.class), name, is,  new ImportOptions() {
+					contentImporter.importContent(parent.adaptTo(Node.class), name + ".json", is, new ImportOptions() {
 
-                        @Override
-                        public boolean isCheckin() {
-                            return false;
-                        }
+						@Override
+						public boolean isCheckin() {
+							return false;
+						}
 
 						@Override
 						public boolean isAutoCheckout() {
@@ -217,67 +217,75 @@ public class FeedImporterJob implements Runnable {
 						}
 
 						@Override
-                        public boolean isIgnoredImportProvider(
-                                String extension) {
-                            return false;
-                        }
+						public boolean isIgnoredImportProvider(String extension) {
+							return false;
+						}
 
-                        @Override
-                        public boolean isOverwrite() {
-                            return false;
-                        }
+						@Override
+						public boolean isOverwrite() {
+							return false;
+						}
 
-                        /* (non-Javadoc)
-                         * @see org.apache.sling.jcr.contentloader.ImportOptions#isPropertyOverwrite()
-                         */
-                        @Override
-                        public boolean isPropertyOverwrite() {
-                            return false;
-                        }
-                    },
-                    new ContentImportListener() {
+						/*
+						 * (non-Javadoc)
+						 * 
+						 * @see
+						 * org.apache.sling.jcr.contentloader.ImportOptions#
+						 * isPropertyOverwrite()
+						 */
+						@Override
+						public boolean isPropertyOverwrite() {
+							return false;
+						}
+					}, new ContentImportListener() {
 
-                        public void onReorder(String orderedPath, String beforeSibbling) {
-                            changes.add(Modification.onOrder(orderedPath, beforeSibbling));
-                        }
+						public void onReorder(String orderedPath, String beforeSibbling) {
+							changes.add(Modification.onOrder(orderedPath, beforeSibbling));
+						}
 
-                        public void onMove(String srcPath, String destPath) {
-                            changes.add(Modification.onMoved(srcPath, destPath));
-                        }
+						public void onMove(String srcPath, String destPath) {
+							changes.add(Modification.onMoved(srcPath, destPath));
+						}
 
-                        public void onModify(String srcPath) {
-                            changes.add(Modification.onModified(srcPath));
-                        }
+						public void onModify(String srcPath) {
+							changes.add(Modification.onModified(srcPath));
+						}
 
-                        public void onDelete(String srcPath) {
-                            changes.add(Modification.onDeleted(srcPath));
-                        }
+						public void onDelete(String srcPath) {
+							changes.add(Modification.onDeleted(srcPath));
+						}
 
-                        public void onCreate(String srcPath) {
-                            changes.add(Modification.onCreated(srcPath));
-                        }
+						public void onCreate(String srcPath) {
+							changes.add(Modification.onCreated(srcPath));
+						}
 
-                        public void onCopy(String srcPath, String destPath) {
-                            changes.add(Modification.onCopied(srcPath, destPath));
-                        }
+						public void onCopy(String srcPath, String destPath) {
+							changes.add(Modification.onCopied(srcPath, destPath));
+						}
 
-                        public void onCheckin(String srcPath) {
-                            changes.add(Modification.onCheckin(srcPath));
-                        }
-                        public void onCheckout(String srcPath) {
-                            changes.add(Modification.onCheckout(srcPath));
-                        }
-                    });
-					
-					log.trace("Changes performed: {}",changes);
-					
+						public void onCheckin(String srcPath) {
+							changes.add(Modification.onCheckin(srcPath));
+						}
+
+						public void onCheckout(String srcPath) {
+							changes.add(Modification.onCheckout(srcPath));
+						}
+					});
+
+					log.trace("Changes performed: {}", changes);
+
 					log.debug("Entry {}/{} created successfully", new Object[] { parent.getPath(), name });
 					fireEvent(OSGI_EVENT_ENTRY_CREATED_TOPIC, model.getBasePath(), parent.getPath() + "/" + name);
+					result.setCreated(result.getCreated() + 1);
+					result.getMessages().add("Created feed entry: " + name);
 				} else {
 					log.debug("Feed entry with name {} already exists, skipping...", name);
+					result.getMessages().add("Feed entry with name " + name + " already exists, skipping...");
 				}
 			} catch (Exception e) {
 				log.warn("Excepting handling feed entry", e);
+				result.setFailedEntries(result.getFailedEntries() + 1);
+				result.getMessages().add("Excepting handling feed entry: " + e);
 			} finally {
 				IOUtils.closeQuietly(is);
 				if (formatter != null) {
@@ -288,9 +296,10 @@ public class FeedImporterJob implements Runnable {
 		}
 	}
 
-	@Override
-	public void run() {
+	public FeedImportJobResult runJob() {
 		log.info("run");
+		FeedImportJobResult result = new FeedImportJobResult();
+		result.setStartDate(new Date());
 		ResourceResolver resolver = null;
 		try {
 			resolver = FeedImporterManager.getResourceResolver(resolverFactory);
@@ -306,24 +315,35 @@ public class FeedImporterJob implements Runnable {
 			} catch (Exception e) {
 				log.error("Failed to download feed for " + configurationPath, e);
 				fireEvent(OSGI_EVENT_FEED_FAILED_TOPIC, model.getBasePath(), null);
+				result.setSucceeded(false);
+				result.getMessages().add("Failed to download feed for " + configurationPath + " " + e);
 			}
 
 			try {
 				if (feed != null) {
-					importFeed(resolver, model, feed);
+					importFeed(resolver, model, feed, result);
 					fireEvent(OSGI_EVENT_FEED_IMPORTED_TOPIC, model.getBasePath(), null);
 				}
 			} catch (Exception e) {
 				log.error("Failed to import feed for " + configurationPath, e);
 				fireEvent(OSGI_EVENT_FEED_FAILED_TOPIC, model.getBasePath(), null);
+				result.setSucceeded(false);
+				result.getMessages().add("Failed to import feed for " + configurationPath + " " + e);
 			}
 		} catch (Throwable t) {
 			log.error("Unexpected problem importing feed " + configurationPath, t);
+			result.getMessages().add("Unexpected problem importing feed " + configurationPath + " " + t);
 		} finally {
 			if (resolver != null) {
 				resolver.close();
 			}
 		}
+		return result;
+	}
+
+	@Override
+	public void run() {
+		runJob();
 	}
 
 	private Map<String, String> toMap(SyndEntry entry) {
@@ -369,8 +389,13 @@ public class FeedImporterJob implements Runnable {
 				value = ((SyndContent) val).getValue();
 			} else if (val instanceof List) {
 				StringBuilder sb = new StringBuilder();
-				for (SyndContent content : (List<SyndContent>) val) {
-					sb.append(content.getValue());
+				for (Object elem : (List<?>) val) {
+					if (elem instanceof SyndContent) {
+						sb.append(((SyndContent) elem).getValue());
+					} else {
+						log.warn("Unexpected content type {}", elem.getClass());
+					}
+
 				}
 				value = sb.toString();
 			} else {
@@ -386,11 +411,11 @@ public class FeedImporterJob implements Runnable {
 			JSONArray array = new JSONArray();
 			for (Object item : (List) val) {
 				if (item instanceof SyndCategory) {
-					array.put(((SyndCategory) val).getName());
+					array.put(((SyndCategory) item).getName());
 				} else if (item instanceof SyndPerson) {
-					array.put(((SyndPerson) val).getName());
+					array.put(((SyndPerson) item).getName());
 				} else if (item instanceof SyndEnclosure) {
-					array.put(((SyndEnclosure) val).getUrl());
+					array.put(((SyndEnclosure) item).getUrl());
 				}
 			}
 			return array.toString();

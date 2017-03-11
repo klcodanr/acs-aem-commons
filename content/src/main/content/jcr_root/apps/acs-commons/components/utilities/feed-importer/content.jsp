@@ -53,4 +53,8 @@
 		</div>
 		
 	</form>
+	
+	<form method="post" action="${resource.path}.importfeed.json">
+		<button class="coral-Button coral-Button--primary" >Import</button>
+	</form>
 </div>
