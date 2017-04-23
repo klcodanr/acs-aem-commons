@@ -37,7 +37,11 @@ import javax.jcr.RepositoryException;
 import javax.script.ScriptException;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.StrSubstitutor;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.sling.api.resource.PersistenceException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
@@ -46,6 +50,7 @@ import org.apache.sling.commons.json.JSONObject;
 import org.apache.sling.jcr.contentloader.ContentImportListener;
 import org.apache.sling.jcr.contentloader.ContentImporter;
 import org.apache.sling.jcr.contentloader.ImportOptions;
+import org.apache.sling.jcr.resource.JcrResourceConstants;
 import org.apache.sling.servlets.post.Modification;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
@@ -55,6 +60,7 @@ import org.osgi.service.event.EventAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.day.cq.commons.jcr.JcrConstants;
 import com.rometools.rome.feed.synd.SyndCategory;
 import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEnclosure;
@@ -134,6 +140,8 @@ public class FeedImporterJob implements Runnable {
 
 	private final ResourceResolverFactory resolverFactory;
 
+	private FeedImportModel model;
+
 	public FeedImporterJob(ResourceResolverFactory resolverFactory, ContentImporter contentImporter,
 			EventAdmin eventAdmin, String configurationPath) {
 		this.resolverFactory = resolverFactory;
@@ -167,16 +175,16 @@ public class FeedImporterJob implements Runnable {
 			throws ScriptException, UnsupportedEncodingException, RepositoryException, IOException {
 		log.trace("importFeed");
 
-		Resource parent = resolver.getResource(model.getBasePath());
-		if (parent == null) {
-			throw new RepositoryException("Parent resource " + model.getBasePath() + " not found");
-		} else {
-			log.debug("Creating feed entries under {}", parent.getPath());
-		}
-
 		Map<String, String> feedData = toMap(feed);
 
 		for (SyndEntry entry : (List<SyndEntry>) feed.getEntries()) {
+
+			Resource parent = resolver.getResource(model.getBasePath());
+			if (parent == null) {
+				throw new RepositoryException("Parent resource " + model.getBasePath() + " not found");
+			} else {
+				log.debug("Creating feed entries under {}", parent.getPath());
+			}
 
 			log.trace("Handing feed entry {}", entry);
 			StringBuilder sb = new StringBuilder();
@@ -186,9 +194,14 @@ public class FeedImporterJob implements Runnable {
 				formatter = new Formatter(sb);
 
 				log.debug("Formatting name {} with date {} and title {}",
-						new Object[] { model.getNameFormat(), entry.getPublishedDate(), entry.getTitle() });
+						new Object[] { model.getNameFormat(), entry.getPublishedDate(), escapeName(entry.getTitle()) });
 				formatter.format(model.getNameFormat(), entry.getPublishedDate(), entry.getTitle());
-				String name = sb.toString().toLowerCase().replaceAll("[^\\w\\d_]+", "-");
+				String name = sb.toString();
+
+				if (name.contains("/")) {
+					parent = createParentFolders(parent, name);
+				}
+
 				log.debug("Formatted name: {}", name);
 
 				if (parent.getChild(name) == null) {
@@ -292,8 +305,41 @@ public class FeedImporterJob implements Runnable {
 					formatter.close();
 				}
 			}
-
 		}
+	}
+
+	private Resource createParentFolders(Resource parent, String name) throws PersistenceException {
+		String[] segments = name.split("\\/");
+		for (int i = 0; i < segments.length - 1; i++) {
+			final String segment = segments[i];
+			Resource folder = parent.getResourceResolver().create(parent, segments[i], new HashMap<String, Object>() {
+				private static final long serialVersionUID = -1L;
+				{
+					put(JcrConstants.JCR_PRIMARYTYPE, JcrResourceConstants.NT_SLING_ORDERED_FOLDER);
+				}
+			});
+			parent.getResourceResolver().create(folder, JcrConstants.JCR_CONTENT, new HashMap<String, Object>() {
+				private static final long serialVersionUID = -1L;
+				{
+					put(JcrConstants.JCR_PRIMARYTYPE, JcrConstants.NT_UNSTRUCTURED);
+					put(JcrConstants.JCR_TITLE, segment);
+				}
+			});
+			parent = folder;
+		}
+		return parent;
+	}
+
+	private String escapeName(String title) {
+		List<String> segments = new ArrayList<String>();
+		for (String seg : title.toLowerCase().replaceAll("[^\\w\\d_]+", "-").split("-")) {
+			if (StringUtils.isNotBlank(seg)) {
+				if (!model.getStripStopWords() || !ArrayUtils.contains(StandardAnalyzer.STOP_WORDS, seg)) {
+					segments.add(seg);
+				}
+			}
+		}
+		return StringUtils.join(segments, "-");
 	}
 
 	public FeedImportJobResult runJob() {
@@ -301,12 +347,13 @@ public class FeedImporterJob implements Runnable {
 		FeedImportJobResult result = new FeedImportJobResult();
 		result.setStartDate(new Date());
 		ResourceResolver resolver = null;
+		Resource configurationResource = null;
 		try {
 			resolver = FeedImporterManager.getResourceResolver(resolverFactory);
 
 			log.debug("Loading configuration from {}", configurationPath);
-			Resource configurationResource = resolver.getResource(configurationPath);
-			FeedImportModel model = new FeedImportModel(configurationResource);
+			configurationResource = resolver.getResource(configurationPath);
+			model = new FeedImportModel(configurationResource);
 			log.debug("Loaded model {}", model);
 
 			SyndFeed feed = null;
@@ -338,6 +385,25 @@ public class FeedImporterJob implements Runnable {
 				resolver.close();
 			}
 		}
+
+		if (configurationResource != null) {
+			try {
+				Resource lastResult = configurationResource.getChild("lastResult");
+				if (lastResult == null) {
+					lastResult = configurationResource.getResourceResolver().create(configurationResource, "lastResult",
+							new HashMap<String, Object>() {
+								private static final long serialVersionUID = 1L;
+								{
+									put(JcrConstants.JCR_PRIMARYTYPE, JcrConstants.NT_UNSTRUCTURED);
+								}
+							});
+				}
+				result.save(lastResult);
+			} catch (Exception e) {
+				log.warn("Exception saving results", e);
+			}
+		}
+
 		return result;
 	}
 

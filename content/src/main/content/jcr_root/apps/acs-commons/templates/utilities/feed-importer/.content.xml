@@ -8,5 +8,7 @@
     <jcr:content
         cq:designPath="/etc/designs/acs-commons"
         jcr:primaryType="cq:PageContent"
-        sling:resourceType="acs-commons/components/utilities/feed-importer"/>
+        sling:resourceType="acs-commons/components/utilities/feed-importer"
+        nameFormat="%1$tY-%1$tm-%1$td-%2$s"
+        resourceJSON="\{&#xd;&#xa;  'jcr:primaryType': 'cq:Page',&#xd;&#xa;  'jcr:content' : {&#xd;&#xa;    'cq:template':'/libs/social/blog/templates/page',&#xd;&#xa;    'sling:resourceType' : 'social/blog/components/page',&#xd;&#xa;    'jcr:title': ${entry.Title},&#xd;&#xa;    'published': ${entry.PublishedDate},&#xd;&#xa;    'par' : {&#xd;&#xa;      'jcr:primaryType': 'nt:unstructured',&#xd;&#xa;      'sling:resourceType': 'foundation/components/parsys',&#xd;&#xa;      'entry': {&#xd;&#xa;        'sling:resourceType': 'social/blog/components/entrytext',&#xd;&#xa;        'text': ${entry.Contents}&#xd;&#xa;      }&#xd;&#xa;    }&#xd;&#xa;  }&#xd;&#xa;}"/>
 </jcr:root>

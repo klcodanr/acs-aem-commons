@@ -38,7 +38,7 @@ public class FeedImportModel {
 		properties = resource.getValueMap();
 	}
 
-	public String getBasePath(){
+	public String getBasePath() {
 		return properties.get("basePath", String.class);
 	}
 
@@ -46,20 +46,24 @@ public class FeedImportModel {
 		return properties.get("cronTrigger", String.class);
 	}
 
-	public URL getFeedURL() throws MalformedURLException{
+	public URL getFeedURL() throws MalformedURLException {
 		return new URL(properties.get("feedURL", String.class));
 	}
-	
+
 	public String getNameFormat() {
 		return properties.get("nameFormat", String.class);
 	}
 
-	public String getResourceJSON(){
+	public String getResourceJSON() {
 		return properties.get("resourceJSON", String.class);
 	}
-	
+
 	public String getTitle() {
-		return properties.get("jcr:content", String.class);
+		return properties.get("jcr:title", String.class);
+	}
+
+	public Boolean getStripStopWords() {
+		return properties.get("stripStopWords", new Boolean(false));
 	}
 
 	@Override

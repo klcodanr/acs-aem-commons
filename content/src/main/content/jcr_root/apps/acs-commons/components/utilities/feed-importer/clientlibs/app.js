@@ -52,6 +52,17 @@ angular.module('acs-commons-feed-importer-app', ['acsCoral', 'ACS.Commons.notifi
                location.reload(true);
             });
         };
+        
+
+        $scope.run = function () {
+        	
+			NotificationsService.running(true);
+
+            $.post($('#run-btn').data('action'), function(res) {
+               $('#run-target').html(JSON.stringify(res, null, 2));
+               return false;
+            });
+        };
 
         $scope.init = function () {
         };

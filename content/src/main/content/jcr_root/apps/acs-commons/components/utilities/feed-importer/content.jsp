@@ -40,6 +40,17 @@
 			</label>
 			<input type="text" class="coral-Textfield" name="./nameFormat" value="${properties.nameFormat}"/>
 		</div>
+	
+		<div class="coral-Form-fieldwrapper">
+			<label class="coral-Form-fieldlabel" for="./stripStopWords">
+				Strip Stop Words
+			</label>
+			<label class="coral-Checkbox">
+                    <input class="coral-Checkbox-input" name="./stripStopWords" type="checkbox" checked="${properties.stripStopWords == 'true'}">
+                    <span class="coral-Checkbox-checkmark"></span>
+                    
+                </label>
+		</div>
 		
 		<div class="coral-Form-fieldwrapper">
 			<label class="coral-Form-fieldlabel">
@@ -53,8 +64,11 @@
 		</div>
 		
 	</form>
+	<br/>
+	<br/>
+	<h2 class="coral-Heading coral-Heading--2">Run Import</h2>
+	<br/><hr/><br/>
 	
-	<form method="post" action="${resource.path}.importfeed.json">
-		<button class="coral-Button coral-Button--primary" >Import</button>
-	</form>
+	<button class="coral-Button coral-Button--primary" data-action="${resource.path}.importfeed.json" id="run-btn" ng-click="run()">Import</button>
+	<pre style="max-width:100%;overflow=scroll"><code id="run-target"></code></pre>
 </div>
