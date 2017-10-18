@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:cq="http://www.day.com/jcr/cq/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0" xmlns:nt="http://www.jcp.org/jcr/nt/1.0"
+    jcr:primaryType="cq:Page">
+    <jcr:content
+        jcr:mixinTypes="[sling:Resource]"
+        jcr:primaryType="nt:unstructured"
+        sling:resourceType="cq/gui/components/projects/admin/dashboard/tile"
+        class="cq-projects-Pod-reportsPod"
+        order="{Long}5">
+        <layout
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="cq/gui/components/projects/admin/dashboard/layouts/tile"/>
+        <header jcr:primaryType="nt:unstructured">
+            <title
+                jcr:primaryType="nt:unstructured"
+                jcr:title="Reports"/>
+            <actions jcr:primaryType="nt:unstructured">
+                <items jcr:primaryType="nt:unstructured">
+                    <createtask
+                        jcr:primaryType="nt:unstructured"
+                        sling:resourceType="granite/ui/components/coral/foundation/hyperlink"
+                        href="/apps/acs-commons/content/projects/wizard/newreport.html${requestPathInfo.suffix}/_jcr_content/dashboard/gadgets/reports?project=${requestPathInfo.suffix}"
+                        icon="plus"
+                        text="Add Report"
+                        title="Create a new report"/>
+                </items>
+            </actions>
+        </header>
+        <body
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="cq/gui/components/projects/admin/dashboard/tiles/externallinks/body"/>
+        <footer
+            jcr:primaryType="nt:unstructured"
+            sling:resourceType="cq/gui/components/projects/admin/dashboard/tiles/externallinks/footer"/>
+    </jcr:content>
+</jcr:root>
