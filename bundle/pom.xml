@@ -65,6 +65,7 @@
                             com.adobe.acs.commons.version.model,
                             com.adobe.acs.commons.wcm.comparisons.model,
                             com.adobe.acs.commons.workflow.bulk.execution.model,
+                            com.adobe.acs.commons.reports.models,
                             com.adobe.acs.commons.mcp.model
                         </Sling-Model-Packages>
                     </instructions>

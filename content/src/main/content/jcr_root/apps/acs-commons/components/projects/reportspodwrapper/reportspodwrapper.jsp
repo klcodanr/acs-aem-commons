@@ -26,7 +26,6 @@
     request.setAttribute("reportsLink", reportsLink);
     request.setAttribute("projectLinkResource", resource);
 %>
-
 <sling:include path="/apps/acs-commons/content/projects/dashboard/default/reports/jcr:content"/><%
     request.setAttribute("projectLinkResource", null);
 %>
